@@ -38,4 +38,3 @@ pipeline {
     }
 }
 
-0cv2rc.uzgzeasiazryzelt
