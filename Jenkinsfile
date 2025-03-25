@@ -8,7 +8,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Clone your repository containing the Kustomize directory structure.
-                git 'https://github.com/your-org/your-repo.git'
+                git 'https://github.com/FonsahPageo/devops-sandbox.git'
             }
         }
         stage('Deploy to Staging') {
