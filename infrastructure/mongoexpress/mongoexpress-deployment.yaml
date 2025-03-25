@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+  labels:
+    io.kompose.service: mongoexpress
+  name: mongoexpress
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: mongoexpress
+  template:
+    metadata:
+      annotations:
+      labels:
+        io.kompose.service: mongoexpress
+    spec:
+      containers:
+        - env:
+            - name: ME_CONFIG_HTTP_PORT
+              value: "8083"
+            - name: ME_CONFIG_MONGODB_SERVER
+              value: mongo
+          image: mongo-express
+          name: mongoexpress
+          ports:
+            - containerPort: 8083
+              protocol: TCP
+      restartPolicy: Always

@@ -1,0 +1,3 @@
+resources:
+  - notifications-deployment.yaml
+  - notifications-service.yaml

@@ -1,0 +1,3 @@
+resources:
+  - maildev-deployment.yaml
+  - maildev-service.yaml

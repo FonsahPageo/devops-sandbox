@@ -1,0 +1,3 @@
+resources:
+  - userinterface-deployment.yaml
+  - userinterface-service.yaml

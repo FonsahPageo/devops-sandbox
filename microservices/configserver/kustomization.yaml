@@ -1,0 +1,3 @@
+resources:
+  - configserver-deployment.yaml
+  - configserver-service.yaml

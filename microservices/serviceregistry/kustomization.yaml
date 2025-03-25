@@ -1,0 +1,3 @@
+resources:
+  - serviceregistry-deployment.yaml
+  - serviceregistry-service.yaml

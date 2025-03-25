@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+  labels:
+    io.kompose.service: mongoexpress
+  name: mongoexpress
+spec:
+  ports:
+    - name: "8083"
+      port: 8083
+      targetPort: 8083
+      nodePort: 30014
+  selector:
+    io.kompose.service: mongoexpress
+  type: NodePort

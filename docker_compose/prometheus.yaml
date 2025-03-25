@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "barbershop-services"
+    static_configs:
+      - targets:
+          - "authserverinmemory:9000"
+          - "authclient:8080"
+          - "barberdashboard:8767"
+          - "userinterface:8766"
+          - "customerorder:8042"
+          - "payments:8060"
+          - "notifications:8040"
+          - "configserver:8088"
+          - "serviceregistry:8761"

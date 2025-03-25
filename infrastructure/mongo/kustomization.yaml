@@ -1,0 +1,3 @@
+resources:
+  - mongo-deployment.yaml
+  - mongo-service.yaml

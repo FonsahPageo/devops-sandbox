@@ -1,0 +1,3 @@
+resources:
+  - customerorder-deployment.yaml
+  - customerorder-service.yaml

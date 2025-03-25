@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+  labels:
+    io.kompose.service: configserver
+  name: configserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: configserver
+  template:
+    metadata:
+      annotations:
+      labels:
+        io.kompose.service: configserver
+    spec:
+      containers:
+        - env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://serviceregistry:8761/eureka
+            - name: SPRING_CLOUD_CONFIG_SERVER_GIT_URI
+              value: https://github.com/REXCHE/config
+            - name: SPRING_CLOUD_CONFIG_URI
+              value: http://configserver:9296
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: password
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/barbershop
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
+          image: amberex/configserver
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - -f
+                - http://configserver:9296
+            failureThreshold: 10
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 30
+          name: configserver
+          ports:
+            - containerPort: 9296
+              protocol: TCP
+      restartPolicy: Always

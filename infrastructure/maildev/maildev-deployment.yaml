@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+  labels:
+    io.kompose.service: maildev
+  name: maildev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: maildev
+  template:
+    metadata:
+      annotations:
+      labels:
+        io.kompose.service: maildev
+    spec:
+      containers:
+        - image: maildev/maildev
+          name: maildev
+          ports:
+            - containerPort: 1080
+              protocol: TCP
+      restartPolicy: Always

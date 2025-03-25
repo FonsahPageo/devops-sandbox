@@ -1,0 +1,10 @@
+resources:
+  - authclient
+  - authserver
+  - dashboard
+  - configserver
+  - customerorder
+  - notifications
+  - payments
+  - serviceregistry
+  - userinterface

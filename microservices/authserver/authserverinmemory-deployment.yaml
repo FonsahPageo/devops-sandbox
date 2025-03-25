@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: authserverinmemory
+  name: authserverinmemory
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: authserverinmemory
+  template:
+    metadata:
+      labels:
+        io.kompose.service: authserverinmemory
+    spec:
+      containers:
+        - env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://serviceregistry:8761/eureka
+            - name: SPRING_CLOUD_CONFIG_URI
+              value: http://configserver:9296
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: password
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/barbershop
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+          image: amberex/authserver_in_memory
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - -f
+                - http://localhost:9000/actuator/health
+            failureThreshold: 10
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 30
+          name: authserverinmemory
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+      restartPolicy: Always

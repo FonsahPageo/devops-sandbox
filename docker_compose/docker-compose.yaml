@@ -1,0 +1,337 @@
+x-spring-common: &spring-common
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/barbershop"
+  SPRING_DATASOURCE_USERNAME: postgres
+  SPRING_DATASOURCE_PASSWORD: password
+  SPRING_CLOUD_CONFIG_URI: "http://configserver:9296"
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://serviceregistry:8761/eureka"
+
+x-spring-healthcheck: &spring-healthcheck
+  interval: 30s
+  timeout: 30s
+  retries: 10
+  start_period: 30s
+
+# ------ INFRASTRUCTURE ----- #
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - motinatech
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_HEAP_OPTS: "-Xmx4G -Xms4G"
+      KAFKA_SOCKET_REQUEST_MAX_BYTES: 1500000000
+      KAFKA_MESSAGE_MAX_BYTES: 1500000000
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 1500000000
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    ports:
+      - "9092:9092"
+    networks:
+      - motinatech
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "kafka-topics --bootstrap-server kafka:9092 --list || exit 1",
+        ]
+      <<: *spring-healthcheck
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_DB: barbershop
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - motinatech
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      <<: *spring-healthcheck
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_LISTEN_PORT: 80
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      GUNICORN_TIMEOUT: 60
+    ports:
+      - "5050:80"
+    networks:
+      - motinatech
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - motinatech
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 20s
+      timeout: 20s
+      retries: 10
+
+  mongoexpress:
+    image: mongoexpress
+    container_name: mongoexpress
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_HTTP_PORT: 8083
+    ports:
+      - "8083:8083"
+    networks:
+      - motinatech
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3050:3000"
+    networks:
+      - motinatech
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - motinatech
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yaml
+
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - motinatech
+
+  maildev:
+    image: maildev/maildev
+    container_name: maildev
+    ports:
+      - "1080:1080"
+    networks:
+      - motinatech
+
+  # --- MICROSERVICES --- #
+
+  serviceregistry:
+    image: amberex/service_registry
+    container_name: serviceregistry
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8761
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+      EUREKA_CLIENT_FETCH_REGISTRY: "false"
+    ports:
+      - "8761:8761"
+    networks:
+      - motinatech
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761 || exit 1"]
+      <<: *spring-healthcheck
+
+  configserver:
+    image: amberex/configserver
+    container_name: configserver
+    depends_on:
+      # serviceregistry:
+      #   condition: service_healthy
+      - serviceregistry
+    environment:
+      <<: *spring-common
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CLOUD_CONFIG_SERVER_GIT_URI: "https://github.com/REXCHE/config"
+    ports:
+      - "9296:9296"
+    networks:
+      - motinatech
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9296"]
+      <<: *spring-healthcheck
+
+  authserverinmemory:
+    image: amberex/authserver_in_memory
+    container_name: authserverinmemory
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: *spring-common
+    ports:
+      - "9000:9000"
+    networks:
+      - motinatech
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000"]
+      <<: *spring-healthcheck
+
+  authclient:
+    image: amberex/authclient_in_memory
+    container_name: authclient
+    depends_on:
+      # postgres:
+      #   condition: service_healthy
+      # authserverinmemory:
+      #   condition: service_started
+      - postgres
+      - authserverinmemory
+    environment:
+      <<: *spring-common
+      OAUTH2_ISSUER_URI: "http://authserverinmemory:9000"
+    ports:
+      - "8080:8080"
+    networks:
+      - motinatech
+    healthcheck:
+      test: ["CMD", "curl", "-f", "localhost:8080"]
+      <<: *spring-healthcheck
+
+  barberdashboard:
+    image: amberex/barber_dashboard
+    container_name: barberdashboard
+    depends_on:
+      - serviceregistry
+    environment:
+      <<: *spring-common
+    ports:
+      - "8767:8767"
+    networks:
+      - motinatech
+
+  userinterface:
+    image: amberex/user_interface
+    container_name: userinterface
+    depends_on:
+      # configserver:
+      #   condition: service_healthy
+      # serviceregistry:
+      #   condition: service_healthy
+      - serviceregistry
+      - configserver
+    environment:
+      <<: *spring-common
+      # SPRING_CONFIG_IMPORT: "configserver:http://configserver:9296"
+      # SPRING_CLOUD_CONFIG_ENABLED: "true"
+      # SPRING_PROFILES_ACTIVE: docker
+      # OAUTH2_ISSUER_URI: "http://authserverinmemory:9000"
+      JAVA_OPTS: "-Xmx512m -Xms256m"
+      SERVER_PORT: 8766
+    ports:
+      - "8766:8766"
+    networks:
+      - motinatech
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8766 || exit 1"]
+      <<: *spring-healthcheck
+
+  customerorder:
+    image: amberex/customerorders
+    container_name: customerorder
+    depends_on:
+      # postgres:
+      #   condition: service_healthy
+      # authserverinmemory:
+      #   condition: service_started
+      # kafka:
+      #   condition: service_healthy
+      - postgres
+      - authserverinmemory
+      - kafka
+      - serviceregistry
+    environment:
+      <<: *spring-common
+      KAFKA_BROKER: "kafka:9092"
+      OAUTH2_ISSUER_URI: "http://authserverinmemory:9000"
+    ports:
+      - "8070:8070"
+    networks:
+      - motinatech
+
+  payments:
+    image: amberex/payments
+    container_name: payments
+    depends_on:
+      # postgres:
+      #   condition: service_healthy
+      # authserverinmemory:
+      #   condition: service_started
+      - postgres
+      - authserverinmemory
+    environment:
+      <<: *spring-common
+      OAUTH2_ISSUER_URI: "http://authserverinmemory:9000"
+    ports:
+      - "8060:8060"
+    networks:
+      - motinatech
+
+  notifications:
+    image: amberex/notification_service
+    container_name: notifications
+    depends_on:
+      # kafka:
+      #   condition: service_healthy
+      # serviceregistry:
+      #   condition: service_healthy
+      - kafka
+      - serviceregistry
+    environment:
+      <<: *spring-common
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:9092
+    ports:
+      - "8040:8040"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8040 || exit 1"]
+      <<: *spring-healthcheck
+    networks:
+      - motinatech
+
+networks:
+  motinatech:
+    name: motinatech
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local

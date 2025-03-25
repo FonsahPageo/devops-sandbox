@@ -1,0 +1,11 @@
+resources:
+  - grafana
+  - kafka
+  - maildev
+  - mongo
+  - mongoexpress
+  - pgadmin
+  - postgres
+  - prometheus
+  - zipkin
+  - zookeeper

@@ -1,0 +1,3 @@
+resources:
+  - authclient-deployment.yaml
+  - authclient-service.yaml

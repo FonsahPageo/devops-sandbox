@@ -1,0 +1,3 @@
+resources:
+  - mongoexpress-deployment.yaml
+  - mongoexpress-service.yaml
