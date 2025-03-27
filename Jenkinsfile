@@ -9,6 +9,7 @@ pipeline {
             steps {
                 sh 'rm -rf devops-sandbox'
                 sh 'git clone https://github.com/FonsahPageo/devops-sandbox.git'
+                sh 'ls'
             }
         }
         stage('Deploy on docker-compose') {
