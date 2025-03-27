@@ -1,9 +1,9 @@
 pipeline {
     agent{ label 'testing' }
-    environment {
-        // Inject your kubeconfig as a secure credential.
-        // KUBECONFIG = credentials('kubeconfig-id')
-    }
+    // environment {
+    //     // Inject your kubeconfig as a secure credential.
+    //     // KUBECONFIG = credentials('kubeconfig-id')
+    // }
     stages {
         stage('Checkout') {
             steps {
