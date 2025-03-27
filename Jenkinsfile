@@ -14,8 +14,8 @@ pipeline {
         stage('Deploy on docker-compose') {
             steps {
                 sh '''
-                    cd devops-sandbox/docker_compose'
-                    docker-compose up -d'
+                    cd devops-sandbox/docker_compose
+                    docker-compose up -d
                 '''
             }
         }
