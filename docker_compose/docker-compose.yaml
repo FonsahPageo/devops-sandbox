@@ -55,7 +55,7 @@ services:
       <<: *spring-healthcheck
 
   postgres:
-    image: postgres:latest
+    image: postgres
     container_name: postgres
     environment:
       POSTGRES_DB: barbershop
@@ -73,7 +73,7 @@ services:
       <<: *spring-healthcheck
 
   pgadmin:
-    image: dpage/pgadmin4
+    image: elestio/pgadmin
     container_name: pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
@@ -101,7 +101,7 @@ services:
       retries: 10
 
   mongoexpress:
-    image: mongoexpress
+    image: mongo-express
     container_name: mongoexpress
     depends_on:
       mongo:
@@ -135,7 +135,7 @@ services:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yaml
 
   zipkin:
-    image: openzipkin/zipkin
+    image: openzipkin/zipkin:latest
     container_name: zipkin
     ports:
       - "9411:9411"
