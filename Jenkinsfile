@@ -16,8 +16,12 @@ pipeline {
                 sh '''
                     cd devops-sandbox/docker_compose
                     docker login
-                    echo "Testing123" | sudo -S systemctl start docker
-                    echo "Testing123" | sudo -S docker-compose up -d
+                    if docker-compose ps | grep -q 'Exit'; then
+                        echo "Found stopped containers - restarting..."
+                        echo "Testing123" | sudo -S docker-compose up -d
+                    else
+                        echo "All containers are running"
+                    fi
                 '''
             }
         }
