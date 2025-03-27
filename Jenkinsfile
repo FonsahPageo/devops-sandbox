@@ -17,7 +17,7 @@ pipeline {
                     cd devops-sandbox/docker_compose
                     docker login
                     echo "Testing123" | sudo -S systemctl start docker
-                    echo "Testing123" | sudo -S docker-compose up -d
+                    echo "Testing123" | sudo -S docker-compose up -d -vv
                 '''
             }
         }
