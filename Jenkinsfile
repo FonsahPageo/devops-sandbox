@@ -15,6 +15,7 @@ pipeline {
             steps {
                 sh '''
                     cd devops-sandbox/docker_compose
+                    echo "Testing123" | sudo -S docker login
                     echo "Testing123" | sudo -S systemctl start docker
                     echo "Testing123" | sudo -S docker-compose up -d
                 '''
