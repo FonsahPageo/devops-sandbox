@@ -16,7 +16,7 @@ pipeline {
                 sh '''
                     cd devops-sandbox/docker_compose
                     sudo systemctl start docker
-                    docker-compose up -d
+                    sudo docker-compose up -d
                 '''
             }
         }
